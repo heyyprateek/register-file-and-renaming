@@ -1,21 +1,48 @@
 #include <inttypes.h>
 
+struct BranchCPEntry {
+	uint64_t* ShadowMapTab;
+	uint64_t* CheckPointFL;
+	uint64_t  CheckPointGBM;
+};
+
+struct ALEntry {
+	uint64_t has_dest;
+	uint64_t dest_log_reg;
+	uint64_t dest_phys_reg;
+	bool comp;
+	bool exc;
+	bool ldvltn;
+	bool brmispred;
+	bool valmispred;
+	bool isload;
+	bool isstore;
+	bool isbranch;
+	bool isamo;
+	bool iscsr;
+	uint64_t pc;
+};
+
 class renamer {
 private:
 	/////////////////////////////////////////////////////////////////////
 	// Put private class variables here.
 	/////////////////////////////////////////////////////////////////////
-
+	uint64_t n_log_regs;
+	uint64_t n_phys_regs;
+	uint64_t n_branches;
+	uint64_t n_active;
 	/////////////////////////////////////////////////////////////////////
 	// Structure 1: Rename Map Table
 	// Entry contains: physical register mapping
 	/////////////////////////////////////////////////////////////////////
+	uint64_t* RMT;
 
 	/////////////////////////////////////////////////////////////////////
 	// Structure 2: Architectural Map Table
 	// Entry contains: physical register mapping
 	/////////////////////////////////////////////////////////////////////
-
+	uint64_t* AMT;
 	/////////////////////////////////////////////////////////////////////
 	// Structure 3: Free List
 	//
@@ -24,6 +51,11 @@ private:
 	// Notes:
 	// * Structure includes head, tail, and their phase bits.
 	/////////////////////////////////////////////////////////////////////
+	uint64_t* FL;
+	uint64_t* flHead;
+	uint64_t* flTail;
+	bool flHeadPhase;
+	bool flTailPhase;
 
 	/////////////////////////////////////////////////////////////////////
 	// Structure 4: Active List
@@ -63,6 +95,11 @@ private:
 	// Notes:
 	// * Structure includes head, tail, and their phase bits.
 	/////////////////////////////////////////////////////////////////////
+	AlEntry* AL;
+	uint64_t* alHead;
+	uint64_t* alTail;
+	bool alHeadPhase;
+	bool alTailPhase;
 
 	/////////////////////////////////////////////////////////////////////
 	// Structure 5: Physical Register File
@@ -72,11 +109,13 @@ private:
 	// * The value must be of the following type: uint64_t
 	//   (#include <inttypes.h>, already at top of this file)
 	/////////////////////////////////////////////////////////////////////
+	uint64_t* PRF;
 
 	/////////////////////////////////////////////////////////////////////
 	// Structure 6: Physical Register File Ready Bit Array
 	// Entry contains: ready bit
 	/////////////////////////////////////////////////////////////////////
+	bool* PRFRdyBits;
 
 	/////////////////////////////////////////////////////////////////////
 	// Structure 7: Global Branch Mask (GBM)
@@ -125,6 +164,7 @@ private:
 	// 2. checkpointed Free List head pointer and its phase bit
 	// 3. checkpointed GBM
 	/////////////////////////////////////////////////////////////////////
+	BranchCPEntry* BranchCheckpoints;
 
 	/////////////////////////////////////////////////////////////////////
 	// Private functions.
