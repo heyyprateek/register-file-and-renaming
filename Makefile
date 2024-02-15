@@ -1,11 +1,11 @@
 CC = g++
 OPT = -O3
 #OPT = -g
-
+STD = -std=c++11
 INC = -I.
 LIB = -L.
 
-CFLAGS = $(OPT) $(INC) $(LIB)
+CFLAGS = $(OPT) $(STD) $(INC) $(LIB)
 
 LIBS = -l721sim -lpthread -lz -ldl 
 
