@@ -9,7 +9,7 @@
 
 using namespace std;
 
-# define DEBUG 1
+# define DEBUG 0
 void debugPrint(const char* format, ...) {
    #if DEBUG
       va_list args;
@@ -41,7 +41,7 @@ void renamer::initializeBranchCheckpoints(BranchCPEntry *BranchCheckpoints,
         }
         BranchCheckpoints[j].flHead = 0;
         BranchCheckpoints[j].flHeadPhase = 0;
-        BranchCheckpoints[j].GBM = GBM;
+        // BranchCheckpoints[j].GBM = GBM;
     }
 }
 
@@ -197,7 +197,7 @@ bool renamer::stall_branch(uint64_t bundle_branch) {
     int avlZeroCount = 0;
     debugPrint("avl %llu, GBM %llu, n_branches %llu\n", avlZeroCount, GBM, n_branches);
     for (uint64_t i = 0; i < n_branches; i++) {
-        if ((GBM & (1ULL << i))==0) {
+        if((GBM & (1ULL << i)) == 0) {
             avlZeroCount++;
             debugPrint("===%llu\n", avlZeroCount);
         }
@@ -233,17 +233,13 @@ uint64_t renamer::rename_rdst(uint64_t log_reg)
 
 uint64_t renamer::checkpoint() {
     debugPrint("entering checkpoint\n");
-    // Extract Branch ID
-    uint64_t mask = 1;
     uint64_t freeBranchPos = 0;
-    for (freeBranchPos = 0; freeBranchPos < n_branches; freeBranchPos++) {
-        debugPrint("mask before %llu\n", mask);
-        mask = mask << freeBranchPos;
-        debugPrint("mask after %llu\n", mask);
-        if((GBM & mask) == 0) break;
+    while (((GBM & (1ULL << freeBranchPos)) != 0) && (freeBranchPos < n_branches)) {
+        freeBranchPos++;
     }
+
     // Update GBM
-    GBM |= mask;
+    GBM |= (1ULL << freeBranchPos);
 
     // Create checkpoint
     debugPrint("checkpoint copy array above\n");
@@ -362,17 +358,10 @@ void renamer::resolve(uint64_t AL_index,
         copyArray(BranchCheckpoints[branch_ID].ShadowMapTab, RMT, n_log_regs);
         flHead = BranchCheckpoints[branch_ID].flHead;
         flHeadPhase = BranchCheckpoints[branch_ID].flHeadPhase;
-        // uint64_t alNewTail = (AL_index + 1) % n_active;
-        // // if (alHead < AL_index && (alHead > alTail)) {
-        // if (alNewTail > alTail) {
-        //     alTailPhase = !alTailPhase;
-        // }
-        // alTail = alNewTail;
-        alTail = AL_index + 1;
-        if (alTail == n_active) {
-            alTail = 0;
+        if (((AL_index + 1) % n_active) > alTail) {
             alTailPhase = !alTailPhase;
         }
+        alTail = (AL_index + 1) % n_active;
     }
     else {// Correct prediction
         GBM &= ~(1ULL << branch_ID);
@@ -459,7 +448,7 @@ void renamer::squash() {
 
     // squash instructions in the Active List
     alTail = alHead;
-    alTailPhase = alHeadPhase = true;
+    alTailPhase = alHeadPhase = false;
 
     // reset GBM;
     GBM = 0;
